@@ -9,6 +9,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, Clear, List, ListDirection, ListItem, Paragraph};
 use ratatui::Frame;
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 use uuid::Uuid;
 
@@ -56,6 +57,45 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.select_channel.is_shown {
         draw_select_channel_popup(f, &mut app.select_channel);
     }
+
+    draw_image_popup(f, &mut app.image);
+}
+
+fn draw_image_popup(f: &mut Frame, app_image: &mut Box<dyn StatefulProtocol>) {
+    let area = centered_rect(20, 20, f.size());
+    let image = StatefulImage::new(None);
+    // let chunks = Layout::default()
+    //     .constraints([Constraint::Length(1 + 2)].as_ref())
+    //     .direction(Direction::Vertical)
+    //     .split(area);
+    f.render_widget(Clear, area);
+
+    // let input = Paragraph::new(Text::from(select_channel.input.data.clone())).block(
+    //     Block::default()
+    //         .borders(Borders::ALL)
+    //         .title("Select channel"),
+    // );
+    f.render_stateful_widget(image, area, app_image);
+    // f.render_widget(input, chunks[0]);
+    // let cursor = &select_channel.input.cursor;
+    // f.set_cursor(
+    //     chunks[0].x + cursor.col as u16 + 1,
+    //     chunks[0].y + cursor.line as u16 + 1,
+    // );
+    // let items: Vec<_> = select_channel.filtered_names().map(ListItem::new).collect();
+    // match select_channel.state.selected() {
+    //     Some(idx) if items.len() <= idx => {
+    //         select_channel.state.select(items.len().checked_sub(1));
+    //     }
+    //     None if !items.is_empty() => {
+    //         select_channel.state.select(Some(0));
+    //     }
+    //     _ => (),
+    // }
+    // let list = List::new(items)
+    //     .block(Block::default().borders(Borders::ALL))
+    //     .highlight_style(Style::default().fg(Color::Black).bg(Color::Gray));
+    // f.render_stateful_widget(list, chunks[1], &mut select_channel.state);
 }
 
 fn draw_select_channel_popup(f: &mut Frame, select_channel: &mut SelectChannel) {

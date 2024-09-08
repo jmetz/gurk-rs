@@ -44,6 +44,8 @@ use std::future::Future;
 use std::path::Path;
 use std::time::Duration;
 
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
+
 /// Amount of time to skip contacts sync after the last sync
 const CONTACTS_SYNC_DEADLINE_SEC: i64 = 60 * 60 * 24; // 1 day
 const CONTACTS_SYNC_TIMEOUT: Duration = Duration::from_secs(20);
@@ -68,6 +70,7 @@ pub struct App {
     event_tx: mpsc::UnboundedSender<Event>,
     // It is expensive to hit the signal manager contacts storage, so we cache it
     names_cache: Cell<Option<BTreeMap<Uuid, String>>>,
+    pub(crate) image: Box<dyn StatefulProtocol>,
 }
 
 impl App {
@@ -77,6 +80,15 @@ impl App {
         storage: Box<dyn Storage>,
     ) -> anyhow::Result<(Self, mpsc::UnboundedReceiver<Event>)> {
         let user_id = signal_manager.user_id();
+
+        let filename = "awkward_monkey_look.gif";
+        let dyn_img = image::ImageReader::open(filename)
+            .unwrap()
+            .decode()
+            .unwrap();
+        let mut picker = Picker::new((8, 12));
+        picker.guess_protocol();
+        let mut image = picker.new_resize_protocol(dyn_img);
 
         // build index of channels and messages for using them as lists content
         let mut channels: StatefulList<ChannelId> = Default::default();
@@ -125,6 +137,7 @@ impl App {
             clipboard,
             event_tx,
             names_cache: Default::default(),
+            image,
         };
         Ok((app, event_rx))
     }
