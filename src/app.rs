@@ -233,6 +233,7 @@ impl App {
                     } else {
                         // input is empty
                         self.try_open_url();
+                        self.try_open_attachment();
                     }
                 } else if self.select_channel.is_shown {
                     if let Some(channel_id) = self.select_channel.selected_channel_id().copied() {
@@ -311,6 +312,26 @@ impl App {
         let re = self.url_regex.compiled();
         open_url(&message, re)?;
         self.reset_message_selection();
+        Some(())
+    }
+
+    /// Tries to open the first attachment in the selected message.
+    ///
+    /// Does nothing if no message is selected and no url is contained in the message.
+    fn try_open_attachment(&mut self) -> Option<()> {
+        let channel_id = self.channels.selected_item()?;
+        let messages = self.messages.get(channel_id)?;
+        let idx = messages.state.selected()?;
+        let idx = messages.items.len().checked_sub(idx + 1)?;
+        let arrived_at = messages.items.get(idx)?;
+        let message = self
+            .storage
+            .message(MessageId::new(*channel_id, *arrived_at))?;
+        let has_attachments = !message.attachments.is_empty();
+        if has_attachments {
+            open_attachments(&message.attachments)?;
+            self.reset_message_selection();
+        }
         Some(())
     }
 
@@ -1540,6 +1561,14 @@ fn open_url(message: &Message, url_regex: &Regex) -> Option<()> {
     let url = m.as_str();
     if let Err(error) = opener::open(url) {
         error!(url, %error, "failed to open");
+    }
+    Some(())
+}
+
+fn open_attachments(attachments: &[Attachment]) -> Option<()> {
+    let url = &attachments[0].filename;
+    if let Err(e) = opener::open(url) {
+        error!("failed to open attachment: {}", e);
     }
     Some(())
 }
